@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InventoryFlow</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Quicksand:wght@400;600&family=Exo+2:wght@400;700&family=Montserrat:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
+</head>
+<body class="light-mode">
+    <div id="loading-spinner" class="spinner"></div>
+    <div id="alerts" class="alert-container"></div>
+    
+    <nav class="nav-bar">
+        <div class="nav-brand">
+            <h1 class="nav-title">Inventory<span class="spark">Flow</span></h1>
+        </div>
+        <div class="nav-controls">
+            <button id="mode-toggle" class="mode-btn" aria-label="Toggle dark mode">Dark Mode</button>
+            <ul class="nav-menu">
+                <li><a href="#dashboard" class="nav-item">Dashboard</a></li>
+                <li><a href="#products" class="nav-item">Products</a></li>
+                <li><a href="#item-creation" class="nav-item">Add Item</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <button id="voice-btn" class="voice-btn" aria-label="Voice command">🎙️ Voice</button>
+
+    <section id="dashboard" class="dashboard-hub">
+        <div class="hero-wave">
+            <h1 class="hero-headline"><span id="headline-text">Streamline Your Inventory Journey</span></h1>
+            <p class="hero-tagline">Effortless tracking, vibrant insights, and seamless control.</p>
+            <button class="action-start" onclick="document.getElementById('item-creation').scrollIntoView({ behavior: 'smooth' })">Start Now</button>
+        </div>
+
+        <div class="stats-flow">
+            <div class="stat-card" id="total-items">
+                <h4>Total Items</h4>
+                <p class="count" data-target="0">0</p>
+            </div>
+            <div class="stat-card" id="low-stock">
+                <h4>Low Stock</h4>
+                <p class="count" data-target="0">0</p>
+            </div>
+            <div class="stat-card" id="categories">
+                <h4>Categories</h4>
+                <p class="count" data-target="0">0</p>
+            </div>
+        </div>
+
+        <div class="insight-grid">
+            <h3 class="grid-title">Inventory Insights</h3>
+            <div class="top-item" id="top-item">Top Item: <span id="top-item-name">None</span> (Qty: <span id="top-item-qty">0</span>)</div>
+            <div class="heatmap" id="heatmap"></div>
+            <canvas id="inventory-chart" class="inventory-chart" aria-label="Inventory quantity chart"></canvas>
+            <canvas id="value-chart" class="inventory-chart" aria-label="Inventory value chart"></canvas>
+        </div>
+    </section>
+    <div class="action-hub">
+        <h3 class="hub-title">Action Hub</h3>
+        <div class="hub-buttons">
+            <button class="hub-btn" onclick="document.getElementById('item-creation').scrollIntoView({ behavior: 'smooth' })">Add Item</button>
+            <button class="hub-btn" onclick="exportInventory()">Export Data</button>
+            <button class="hub-btn" onclick="generatePDFReport()">Generate PDF Report</button>
+            <input type="file" id="csv-upload" accept=".csv" style="display: none;" onchange="importCSV(event)">
+            <button class="hub-btn" onclick="document.getElementById('csv-upload').click()">Import CSV</button>
+        </div>
+    </div>
+
+    <div class="wave-bg"></div>
+    <canvas id="nebula-canvas" class="nebula-canvas" aria-hidden="true"></canvas>
+
+    <section id="products" class="products-zone">
+        <h2 class="zone-title">Product Universe</h2>
+        <div class="search-orbit">
+            <input type="text" id="search" placeholder="Explore Your Inventory..." class="orbit-input" aria-label="Search inventory">
+        </div>
+        <div class="table-galaxy">
+            <table class="inventory-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Quantity</th>
+                        <th>Value</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="product-table"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section id="item-creation" class="add-item-space">
+        <h2 class="space-title">Item Creation Station</h2>
+        <div class="creation-pod">
+            <form id="item-creation-form" class="item-creator">
+                <div class="creator-field">
+                    <label for="item-id">Item ID</label>
+                    <input type="text" id="item-id" placeholder="Auto-Generated" readonly>
+                </div>
+                <div class="creator-field">
+                    <label for="item-name">Item Name</label>
+                    <input type="text" id="item-name" placeholder="Name Your Item" required>
+                </div>
+                <div class="creator-field">
+                    <label for="item-category">Category</label>
+                    <input type="text" id="item-category" placeholder="Set Category" required>
+                </div>
+                <div class="creator-field">
+                    <label for="item-quantity">Quantity</label>
+                    <input type="number" id="item-quantity" placeholder="Add Quantity" min="0" required>
+                </div>
+                <div class="creator-field">
+                    <label for="item-value">Value ($)</label>
+                    <input type="number" id="item-value" placeholder="Enter Value" min="0" step="0.01" required>
+                </div>
+                <button type="submit" class="creator-btn">Launch Item</button>
+            </form>
+        </div>
+    </section>
+
+    <div id="quick-add-widget" class="quick-add-widget">
+        <button id="quick-add-toggle" class="quick-add-btn" aria-label="Toggle quick add">+ Quick Add</button>
+        <form id="quick-add-form" class="quick-add-form">
+            <input type="text" id="quick-name" placeholder="Item Name" required>
+            <input type="text" id="quick-category" placeholder="Category" required>
+            <input type="number" id="quick-quantity" placeholder="Qty" min="0" required>
+            <input type="number" id="quick-value" placeholder="Value ($)" min="0" step="0.01" required>
+            <button type="submit">Add</button>
+        </form>
+    </div>
+
+    <script src="script.js" defer></script>
+</body>
+</html>
+
