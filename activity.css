@@ -1,0 +1,24 @@
+.activity-container {
+    background: var(--card-light);
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px var(--shadow-light);
+    padding: 2rem;
+}
+
+body.dark-mode .activity-container {
+    background: var(--card-dark);
+    box-shadow: 0 4px 12px var(--shadow-dark);
+}
+
+.low-stock-section, .out-of-stock-section, .history-section {
+    background: var(--card-light);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+body.dark-mode .low-stock-section,
+body.dark-mode .out-of-stock-section,
+body.dark-mode .history-section {
+    background: var(--card-dark);
+}

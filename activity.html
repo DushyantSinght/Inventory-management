@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity - InventoryFlow</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="activity.css">
+</head>
+<body class="light-mode">
+    <div id="loading-spinner" class="spinner"></div>
+    <div id="alerts" class="alert-container"></div>
+
+    <nav class="nav-bar">
+        <div class="nav-brand">
+            <h1 class="nav-title">Inventory<span class="spark">Flow</span></h1>
+        </div>
+        <div class="nav-controls">
+            <button id="mode-toggle" class="mode-btn" aria-label="Toggle dark mode">Dark Mode</button>
+            <ul class="nav-menu">
+                <li><a href="index.html#dashboard" class="nav-item">Dashboard</a></li>
+                <li><a href="index.html#products" class="nav-item">Products</a></li>
+                <li><a href="index.html#item-creation" class="nav-item">Add Item</a></li>
+                <li><a href="activity.html" class="nav-item active">Activity</a></li>
+                <li><a href="about.html" class="nav-item">About Us</a></li>
+            </ul>
+            <a href="javascript:showLoginPage()" id="login-btn" class="login-btn" aria-label="Login to your account">Login</a>
+        </div>
+    </nav>
+
+    <div class="activity-container max-w-6xl mx-auto p-6">
+        <h2 class="zone-title">Activity Overview</h2>
+
+        <section class="low-stock-section mb-8">
+            <h3 class="text-2xl font-semibold mb-4">Low Stock Items</h3>
+            <div class="table-galaxy">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Quantity</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="low-stock-table"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="out-of-stock-section mb-8">
+            <h3 class="text-2xl font-semibold mb-4">Out of Stock Items</h3>
+            <div class="table-galaxy">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Quantity</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="out-of-stock-table"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="history-section">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-semibold">Inventory History</h3>
+                <button id="clear-history-btn" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Clear History</button>
+            </div>
+            <div class="table-galaxy">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Action</th>
+                            <th>Item ID</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Quantity</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <div class="auth-footer">
+        © 2025 InventoryFlow. All rights reserved.
+    </div>
+
+    <script src="script.js"></script>
+    <script src="activity.js"></script>
+</body>
+</html>

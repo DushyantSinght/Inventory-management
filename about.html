@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Introduction - InventoryFlow</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="enhanced-styles.css">
+    <link rel="stylesheet" href="about.css">
+</head>
+<body class="light-mode">
+    <div id="loading-spinner" class="spinner"></div>
+    <div id="alerts" class="alert-container"></div>
+
+    <nav class="nav-bar">
+        <div class="nav-brand">
+            <h1 class="nav-title">Inventory<span class="spark">Flow</span></h1>
+        </div>
+        <div class="nav-controls">
+            <button id="mode-toggle" class="mode-btn" aria-label="Toggle dark mode">Dark Mode</button>
+            <ul class="nav-menu">
+                <li><a href="index.html#dashboard" class="nav-item">Dashboard</a></li>
+                <li><a href="index.html#products" class="nav-item">Products</a></li>
+                <li><a href="index.html#item-creation" class="nav-item">Add Item</a></li>
+                <li><a href="activity.html" class="nav-item">Activity</a></li>
+                <li><a href="about.html" class="nav-item active">Introduction</a></li>
+            </ul>
+            <a href="javascript:showLoginPage()" id="login-btn" class="login-btn" aria-label="Login to your account">Login</a>
+        </div>
+    </nav>
+
+    <div class="intro-container max-w-7xl mx-auto p-6">
+        <!-- Hero Section -->
+        <section class="hero-section relative text-center py-20 mb-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden">
+            <canvas id="hero-particles" class="absolute inset-0"></canvas>
+            <h1 class="text-5xl md:text-6xl font-bold text-white mb-4 animate-fade-in">Discover InventoryFlow</h1>
+            <p class="text-xl text-white mb-8 max-w-3xl mx-auto animate-fade-in delay-200">
+                Revolutionize your inventory management with a powerful, intuitive, and visually stunning platform designed to streamline your business operations.
+            </p>
+            <a href="index.html#dashboard" class="inline-block px-8 py-4 bg-white text-blue-600 font-semibold rounded-full hover:bg-gray-100 transition animate-fade-in delay-400">Get Started Now</a>
+            <div class="mt-12">
+                <!-- <img src="https://images.unsplash.com/photo-1586528116311-ad8c12966e8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80" alt="Inventory Management" class="w-full h-[500px] object-cover rounded-lg shadow-2xl mx-auto"> -->
+            </div>
+        </section>
+
+        <!-- About InventoryFlow -->
+        <section class="about-section mb-16">
+            <h2 class="text-4xl font-semibold text-center mb-8">What is InventoryFlow?</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div>
+                    <p class="text-lg text-gray-600 dark:text-gray-300 mb-4">
+                        InventoryFlow is an enterprise-grade inventory management system crafted to simplify and enhance the way businesses track, manage, and analyze their stock. With a focus on user experience, our platform combines cutting-edge technology with a sleek, modern interface to deliver unparalleled efficiency.
+                    </p>
+                    <p class="text-lg text-gray-600 dark:text-gray-300">
+                        From real-time stock alerts to advanced analytics and voice-activated controls, InventoryFlow empowers businesses of all sizes to stay ahead in a competitive market. Whether you're managing a small warehouse or a global supply chain, InventoryFlow is your partner in success.
+                    </p>
+                </div>
+                <img src="./Images/inventory management.avif" alt="Team Collaboration" class="w-full h-96 object-cover rounded-lg shadow-lg">
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features-section mb-16">
+            <h2 class="text-4xl font-semibold text-center mb-12">Our Features</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="feature-card p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-xl transition transform hover:-translate-y-2">
+                    <img src="./Images/real time inventory tracking.jpg" alt="Real-Time Tracking" class="w-full h-48 object-cover rounded-lg mb-4">
+                    <h3 class="text-2xl font-semibold mb-2">Real-Time Tracking</h3>
+                    <p class="text-gray-600 dark:text-gray-300">Monitor inventory levels instantly with dynamic updates and receive alerts for low stock or out-of-stock items, ensuring you never miss a beat.</p>
+                </div>
+                <div class="feature-card p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-xl transition transform hover:-translate-y-2">
+                    <img src="./Images/advanced analytics.jpg" alt="Advanced Analytics" class="w-full h-48 object-cover rounded-lg mb-4">
+                    <h3 class="text-2xl font-semibold mb-2">Advanced Analytics</h3>
+                    <p class="text-gray-600 dark:text-gray-300">Unlock insights with professional visualizations, including bar, pie, and line charts, to analyze categories, values, and trends.</p>
+                </div>
+                <div class="feature-card p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-xl transition transform hover:-translate-y-2">
+                    <img src="./Images/voice integration.jpg" alt="Voice Integration" class="w-full h-48 object-cover rounded-lg mb-4">
+                    <h3 class="text-2xl font-semibold mb-2">Voice Integration</h3>
+                    <p class="text-gray-600 dark:text-gray-300">Add, search, or filter inventory items using voice commands, making management faster and hands-free.</p>
+                </div>
+                <div class="feature-card p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-xl transition transform hover:-translate-y-2">
+                    <img src="./Images/data export.jpg" alt="Data Export" class="w-full h-48 object-cover rounded-lg mb-4">
+                    <h3 class="text-2xl font-semibold mb-2">Data Export</h3>
+                    <p class="text-gray-600 dark:text-gray-300">Export inventory data as Excel or PDF reports with one click, perfect for sharing or record-keeping.</p>
+                </div>
+                <div class="feature-card p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-xl transition transform hover:-translate-y-2">
+                    <img src="./Images/bulk-import.jpg" alt="Bulk Import" class="w-full h-48 object-cover rounded-lg mb-4">
+                    <h3 class="text-2xl font-semibold mb-2">Bulk Import</h3>
+                    <p class="text-gray-600 dark:text-gray-300">Import large datasets via CSV files, streamlining the process of updating your inventory.</p>
+                </div>
+                <div class="feature-card p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:shadow-xl transition transform hover:-translate-y-2">
+                    <img src="./Images/custom theme.jpg" alt="Custom Themes" class="w-full h-48 object-cover rounded-lg mb-4">
+                    <h3 class="text-2xl font-semibold mb-2">Custom Themes</h3>
+                    <p class="text-gray-600 dark:text-gray-300">Personalize your experience with light/dark modes and vibrant theme options like purple, orange, and blue.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Team Section -->
+        <section class="team-section mb-16 py-16">
+            <h2 class="text-4xl font-semibold text-center mb-12">Meet Our Team</h2>
+            <div class="flex justify-center">
+                <div class="team-card p-8 bg-white dark:bg-gray-800 rounded-xl shadow-2xl text-center w-full max-w-lg md:max-w-2xl transition-transform transform hover:scale-105 animate-fade-in bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-900">
+                    <p class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-4">Our Visionary Leader</p>
+                    <!-- <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="Team Member" class="w-48 h-48 md:w-64 md:h-64 rounded-full mx-auto mb-6 border-4 border-blue-500 dark:border-blue-400"> -->
+                    <img src="./Images/Profile Image.jpeg" alt="Team Member" class="w-48 h-48 md:w-64 md:h-64 rounded-full mx-auto mb-6 border-4 border-blue-500 dark:border-blue-400">
+                    <h3 class="text-4xl md:text-5xl font-bold text-gray-800 dark:text-gray-200 mb-2">Ravi Raj</h3>
+                    <p class="text-xl md:text-2xl text-gray-600 dark:text-gray-300">Front-End & Back-End Developer<br> UI/UX Designer</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials Section -->
+        <section class="testimonials-section mb-16">
+            <h2 class="text-4xl font-semibold text-center mb-12">What Our Users Say</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="testimonial-card p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+                    <p class="text-gray-600 dark:text-gray-300 mb-4">"InventoryFlow transformed our warehouse operations. The real-time alerts and analytics are game-changers!"</p>
+                    <p class="text-gray-800 dark:text-gray-200 font-semibold">Sarah L., Warehouse Manager</p>
+                </div>
+                <div class="testimonial-card p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+                    <p class="text-gray-600 dark:text-gray-300 mb-4">"The voice command feature is incredibly intuitive. Adding items has never been easier."</p>
+                    <p class="text-gray-800 dark:text-gray-200 font-semibold">Mike R., Retail Owner</p>
+                </div>
+                <div class="testimonial-card p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+                    <p class="text-gray-600 dark:text-gray-300 mb-4">"The sleek design and powerful features make InventoryFlow a must-have for any business."</p>
+                    <p class="text-gray-800 dark:text-gray-200 font-semibold">Emily T., Supply Chain Analyst</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Us Section -->
+        <section class="contact-section bg-gray-100 dark:bg-gray-900 py-16 rounded-lg">
+            <h2 class="text-4xl font-semibold text-center mb-12">Get in Touch</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                <div class="contact-details p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+                    <h3 class="text-2xl font-semibold mb-6">Contact Information</h3>
+                    <p class="text-gray-600 dark:text-gray-300 mb-4"><strong>Email:</strong> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2f5c5a5f5f405d5b6f464e52414a50455c574e4043014c4042">support.team@inventoryflow.com</a></p>
+                    <!-- [email&#160;protected] -->
+                    <p class="text-gray-600 dark:text-gray-300 mb-4"><strong>Phone:</strong> +91 (800) 123-4567</p>
+                    <p class="text-gray-600 dark:text-gray-300 mb-4"><strong>Address:</strong> Jalandhar - Delhi, Grand Trunk Rd, Phagwara, Punjab 144411</p>
+                    <p class="text-gray-600 dark:text-gray-300">We're here to assist you 24/7. Reach out with any questions or feedback!</p>
+                </div>
+                <form id="contact-form" class="contact-form p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+                    <div class="mb-6">
+                        <label for="contact-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name</label>
+                        <input type="text" id="contact-name" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div class="mb-6">
+                        <label for="contact-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
+                        <input type="email" id="contact-email" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div class="mb-6">
+                        <label for="contact-message" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Message</label>
+                        <textarea id="contact-message" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="w-full p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">Send Message</button>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <div class="auth-footer text-center py-8">
+        © 2025 InventoryFlow. All rights reserved.
+    </div>
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
+    <script src="script.js"></script>
+    <script src="about.js"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'932a5c06a9ecbf96',t:'MTc0NTA0NDI5MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+</body>
+</html>

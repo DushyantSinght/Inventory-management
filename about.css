@@ -1,0 +1,108 @@
+.intro-container {
+    background: var(--card-light);
+    border-radius: 1rem;
+    box-shadow: 0 8px 32px var(--shadow-light);
+    padding: 2rem;
+    position: relative;
+}
+
+body.dark-mode .intro-container {
+    background: var(--card-dark);
+    box-shadow: 0 8px 32px var(--shadow-dark);
+    border: 2px solid var(--border-dark);
+}
+
+.hero-section {
+    background: linear-gradient(45deg, rgba(74, 144, 226, 0.9), rgba(128, 0, 128, 0.9));
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-particles {
+    opacity: 0.3;
+}
+
+.feature-card, .team-card, .testimonial-card, .contact-details, .contact-form {
+    transition: var(--transition);
+    background: var(--card-light);
+}
+
+body.dark-mode .feature-card,
+body.dark-mode .team-card,
+body.dark-mode .testimonial-card,
+body.dark-mode .contact-details,
+body.dark-mode .contact-form {
+    background: var(--card-dark);
+}
+
+.feature-card:hover, .team-card:hover, .testimonial-card:hover, .contact-details:hover, .contact-form:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .feature-card:hover,
+body.dark-mode .team-card:hover,
+body.dark-mode .testimonial-card:hover,
+body.dark-mode .contact-details:hover,
+body.dark-mode .contact-form:hover {
+    box-shadow: 0 12px 24px rgba(0, 255, 204, 0.3);
+}
+
+.contact-section {
+    background: rgba(243, 244, 246, 0.8);
+    backdrop-filter: blur(5px);
+}
+
+body.dark-mode .contact-section {
+    background: rgba(26, 32, 44, 0.8);
+}
+
+@keyframes fade-in {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fade-in 1s ease-out forwards;
+}
+
+.delay-200 { animation-delay: 0.2s; }
+.delay-400 { animation-delay: 0.4s; }
+
+/* Enhanced text contrast in dark mode for better visibility */
+body.dark-mode .about-section p,
+body.dark-mode .features-section p,
+body.dark-mode .testimonials-section p,
+body.dark-mode .contact-section p {
+    color: #F3F4F6; /* Equivalent to text-gray-100 */
+}
+
+body.dark-mode .about-section h2,
+body.dark-mode .features-section h2,
+body.dark-mode .features-section h3,
+body.dark-mode .testimonials-section h2,
+body.dark-mode .contact-section h2,
+body.dark-mode .contact-section h3 {
+    color: #FFFFFF; /* Equivalent to text-white */
+}
+
+body.dark-mode .team-card p:not(.text-3xl) {
+    color: #F3F4F6; /* Ensure role text in team card is bright */
+}
+
+body.dark-mode .team-card h3 {
+    color: #E5E7EB; /* Keep name slightly softer (gray-200) for hierarchy */
+}
+
+@media (max-width: 768px) {
+    .hero-section h1 {
+        font-size: 2.5rem;
+    }
+    .hero-section p {
+        font-size: 1rem;
+    }
+    .intro-container {
+        padding: 1rem;
+    }
+}

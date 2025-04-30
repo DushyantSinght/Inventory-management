@@ -4,140 +4,272 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>InventoryFlow</title>
-    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Quicksand:wght@400;600&family=Exo+2:wght@400;700&family=Montserrat:wght@300;400;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="enhanced-styles.css">
 </head>
-<body class="light-mode">
+<body class="light-mode single-page-view">
     <div id="loading-spinner" class="spinner"></div>
     <div id="alerts" class="alert-container"></div>
     
-    <nav class="nav-bar">
-        <div class="nav-brand">
-            <h1 class="nav-title">Inventory<span class="spark">Flow</span></h1>
-        </div>
-        <div class="nav-controls">
-            <button id="mode-toggle" class="mode-btn" aria-label="Toggle dark mode">Dark Mode</button>
-            <ul class="nav-menu">
-                <li><a href="#dashboard" class="nav-item">Dashboard</a></li>
-                <li><a href="#products" class="nav-item">Products</a></li>
-                <li><a href="#item-creation" class="nav-item">Add Item</a></li>
-            </ul>
-        </div>
-    </nav>
-
-    <button id="voice-btn" class="voice-btn" aria-label="Voice command">🎙️ Voice</button>
-
-    <section id="dashboard" class="dashboard-hub">
-        <div class="hero-wave">
-            <h1 class="hero-headline"><span id="headline-text">Streamline Your Inventory Journey</span></h1>
-            <p class="hero-tagline">Effortless tracking, vibrant insights, and seamless control.</p>
-            <button class="action-start" onclick="document.getElementById('item-creation').scrollIntoView({ behavior: 'smooth' })">Start Now</button>
-        </div>
-
-        <div class="stats-flow">
-            <div class="stat-card" id="total-items">
-                <h4>Total Items</h4>
-                <p class="count" data-target="0">0</p>
+    <div id="main-page" class="page-section active">
+        <nav class="nav-bar">
+            <div class="nav-brand">
+                <h1 class="nav-title">Inventory<span class="spark">Flow</span></h1>
             </div>
-            <div class="stat-card" id="low-stock">
-                <h4>Low Stock</h4>
-                <p class="count" data-target="0">0</p>
+            <div class="nav-controls">
+                <button id="mode-toggle" class="mode-btn" aria-label="Toggle dark mode">Dark Mode</button>
+                <ul class="nav-menu">
+                    <li><a href="#dashboard" class="nav-item">Dashboard</a></li>
+                    <li><a href="#products" class="nav-item">Products</a></li>
+                    <li><a href="#item-creation" class="nav-item">Add Item</a></li>
+                    <li><a href="activity.html" class="nav-item">Activity</a></li>
+                    <li><a href="about.html" class="nav-item">About Us</a></li>
+                </ul>
+                <a href="javascript:showLoginPage()" id="login-btn" class="login-btn" aria-label="Login to your account">Login</a>
             </div>
-            <div class="stat-card" id="categories">
-                <h4>Categories</h4>
-                <p class="count" data-target="0">0</p>
+        </nav>
+        
+        <div class="single-page-container">
+            <section id="dashboard" class="dashboard-hub">
+                <div class="hero-wave">
+                    <h1 class="hero-headline"><span id="headline-text">Streamline Your Inventory Journey</span></h1>
+                    <p class="hero-tagline">Effortless tracking, vibrant insights, and seamless control.</p>
+                    <button class="action-start" onclick="document.getElementById('item-creation').scrollIntoView({ behavior: 'smooth' })">Start Now</button>
+                </div>
+                <h2 class="text-2xl font-semibold mb-4">Dashboard</h2>
+                <div class="stats-flow">
+                    <div class="stat-card" id="total-items">
+                        <h4>Total Items</h4>
+                        <p id="total-items-count" class="count" data-target="0">0</p>
+                    </div>
+                    <div class="stat-card" id="low-stock">
+                        <h4>Low Stock</h4>
+                        <p id="low-stock-count" class="count" data-target="0">0</p>
+                    </div>
+                    <div class="stat-card" id="out-of-stock">
+                        <h4>Out of Stock</h4>
+                        <p id="out-of-stock-count" class="count" data-target="0">0</p>
+                    </div>
+                    <div class="stat-card" id="categories">
+                        <h4>Categories</h4>
+                        <p id="categories-count" class="count" data-target="0">0</p>
+                    </div>
+                </div>
+
+                <div class="insight-grid">
+                    <h3 class="grid-title">Inventory Insights</h3>
+                    <div class="top-item" id="top-item">Top Item: <span id="top-item-name">None</span> (Qty: <span id="top-item-qty">0</span>)</div>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <canvas id="category-chart" class="inventory-chart" aria-label="Category vs Quantity chart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="value-donut-chart" class="inventory-chart" aria-label="Items vs Value chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <canvas id="line-chart" class="inventory-chart" aria-label="Quantity over time chart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="quantity-chart" class="inventory-chart" aria-label="Items vs Quantity chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="action-hub">
+                <h2 class="hub-title">Action Hub</h2>
+                <div class="hub-buttons">
+                    <button class="hub-btn" onclick="document.getElementById('item-creation').scrollIntoView({ behavior: 'smooth' })">Add Item</button>
+                    <button class="hub-btn" onclick="exportInventory()">Export Data</button>
+                    <button id="pdf-button" class="hub-btn">Generate PDF Report</button>
+                    <input type="file" id="csv-upload" accept=".csv" style="display: none;" onchange="importCSV(event)">
+                    <button class="hub-btn" onclick="document.getElementById('csv-upload').click()">Import CSV</button>
+                </div>
             </div>
+
+            <section id="products" class="products-zone">
+                <h2 class="zone-title">Product Universe</h2>
+                <div class="search-orbit">
+                    <div class="filter-controls"></div>
+                    <input type="text" id="search" placeholder="Explore Your Inventory..." class="orbit-input" aria-label="Search inventory">
+                </div>
+                <div class="table-galaxy">
+                    <table class="inventory-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Value</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-table"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="item-creation" class="add-item-space">
+                <h2 class="space-title">Item Creation Station</h2>
+                <div class="creation-pod">
+                    <form id="item-creation-form" class="item-creator" action="insert.php" method="POST">
+                        <div class="creator-field">
+                            <label for="item-id">Item ID</label>
+                            <input type="text" id="item-id" name="item-id" placeholder="Auto-Generated" readonly>
+                        </div>
+                        <div class="creator-field">
+                            <label for="item-name">Item Name</label>
+                            <input type="text" id="item-name" name="item-name" placeholder="Name Your Item" required>
+                        </div>
+                        <div class="creator-field">
+                            <label for="item-category">Category</label>
+                            <input type="text" id="item-category" name="item-category" placeholder="Set Category" required>
+                        </div>
+                        <div class="creator-field">
+                            <label for="item-quantity">Quantity</label>
+                            <input type="number" id="item-quantity" name="item-quantity" placeholder="Add Quantity" min="0" required>
+                        </div>
+                        <div class="creator-field">
+                            <label for="item-value">Value (₹)</label>
+                            <input type="number" id="item-value" name="item-value" placeholder="Enter Value" min="0" step="0.01" required>
+                        </div>
+                        <button type="submit" class="creator-btn">Launch Item</button>
+                    </form>
+                </div>
+            </section>
         </div>
 
-        <div class="insight-grid">
-            <h3 class="grid-title">Inventory Insights</h3>
-            <div class="top-item" id="top-item">Top Item: <span id="top-item-name">None</span> (Qty: <span id="top-item-qty">0</span>)</div>
-            <div class="heatmap" id="heatmap"></div>
-            <canvas id="inventory-chart" class="inventory-chart" aria-label="Inventory quantity chart"></canvas>
-            <canvas id="value-chart" class="inventory-chart" aria-label="Inventory value chart"></canvas>
+        <div class="auth-footer">
+            © 2025 InventoryFlow. All rights reserved.
         </div>
-    </section>
-    <div class="action-hub">
-        <h3 class="hub-title">Action Hub</h3>
-        <div class="hub-buttons">
-            <button class="hub-btn" onclick="document.getElementById('item-creation').scrollIntoView({ behavior: 'smooth' })">Add Item</button>
-            <button class="hub-btn" onclick="exportInventory()">Export Data</button>
-            <button class="hub-btn" onclick="generatePDFReport()">Generate PDF Report</button>
-            <input type="file" id="csv-upload" accept=".csv" style="display: none;" onchange="importCSV(event)">
-            <button class="hub-btn" onclick="document.getElementById('csv-upload').click()">Import CSV</button>
-        </div>
-    </div>
 
-    <div class="wave-bg"></div>
-    <canvas id="nebula-canvas" class="nebula-canvas" aria-hidden="true"></canvas>
-
-    <section id="products" class="products-zone">
-        <h2 class="zone-title">Product Universe</h2>
-        <div class="search-orbit">
-            <input type="text" id="search" placeholder="Explore Your Inventory..." class="orbit-input" aria-label="Search inventory">
-        </div>
-        <div class="table-galaxy">
-            <table class="inventory-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Category</th>
-                        <th>Quantity</th>
-                        <th>Value</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="product-table"></tbody>
-            </table>
-        </div>
-    </section>
-
-    <section id="item-creation" class="add-item-space">
-        <h2 class="space-title">Item Creation Station</h2>
-        <div class="creation-pod">
-            <form id="item-creation-form" class="item-creator">
-                <div class="creator-field">
-                    <label for="item-id">Item ID</label>
-                    <input type="text" id="item-id" placeholder="Auto-Generated" readonly>
-                </div>
-                <div class="creator-field">
-                    <label for="item-name">Item Name</label>
-                    <input type="text" id="item-name" placeholder="Name Your Item" required>
-                </div>
-                <div class="creator-field">
-                    <label for="item-category">Category</label>
-                    <input type="text" id="item-category" placeholder="Set Category" required>
-                </div>
-                <div class="creator-field">
-                    <label for="item-quantity">Quantity</label>
-                    <input type="number" id="item-quantity" placeholder="Add Quantity" min="0" required>
-                </div>
-                <div class="creator-field">
-                    <label for="item-value">Value ($)</label>
-                    <input type="number" id="item-value" placeholder="Enter Value" min="0" step="0.01" required>
-                </div>
-                <button type="submit" class="creator-btn">Launch Item</button>
+        <div id="quick-add-widget" class="quick-add-widget">
+            <button id="quick-add-toggle" class="quick-add-btn" aria-label="Toggle quick add">+ Quick Add</button>
+            <form id="quick-add-form" class="quick-add-form">
+                <input type="text" id="quick-name" placeholder="Item Name" required>
+                <input type="text" id="quick-category" placeholder="Category" required>
+                <input type="number" id="quick-quantity" placeholder="Qty" min="0" required>
+                <input type="number" id="quick-value" placeholder="Value (₹)" min="0" step="0.01" required>
+                <button type="submit">Add</button>
             </form>
         </div>
-    </section>
 
-    <div id="quick-add-widget" class="quick-add-widget">
-        <button id="quick-add-toggle" class="quick-add-btn" aria-label="Toggle quick add">+ Quick Add</button>
-        <form id="quick-add-form" class="quick-add-form">
-            <input type="text" id="quick-name" placeholder="Item Name" required>
-            <input type="text" id="quick-category" placeholder="Category" required>
-            <input type="number" id="quick-quantity" placeholder="Qty" min="0" required>
-            <input type="number" id="quick-value" placeholder="Value ($)" min="0" step="0.01" required>
-            <button type="submit">Add</button>
-        </form>
+        <button id="voice-btn" class="voice-btn" aria-label="Voice command">🎙️ Voice</button>
     </div>
 
-    <script src="script.js" defer></script>
+    <div id="login-page" class="page-section">
+        <div class="auth-container">
+            <div class="auth-card">
+                <h2 class="auth-title">Inventory<span class="auth-title-accent">Flow</span></h2>
+                <form id="login-form" class="auth-form space-y-4">
+                    <div class="form-group">
+                        <label for="login-username" class="block text-sm font-medium">Username</label>
+                        <input type="text" id="login-username" placeholder="Enter your username" required class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password" class="block text-sm font-medium">Password</label>
+                        <input type="password" id="login-password" placeholder="Enter your password" required class="form-input">
+                    </div>
+                    <button type="submit" class="auth-btn">Sign In</button>
+                    <div class="flex justify-between text-sm">
+                        <a href="#" id="forgot-password" class="auth-link">Forgot Password?</a>
+                        <a href="javascript:showSignupPage()" class="auth-link">Create Account</a>
+                    </div>
+                </form>
+                <div class="or-divider">OR</div>
+                <div class="flex justify-center gap-4">
+                    <button class="social-btn" aria-label="Sign in with Google">
+                        <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12.545 2.875c-3.556 0-6.44 2.884-6.44 6.44 0 3.556 2.884 6.44 6.44 6.44 3.556 0 6.44-2.884 6.44-6.44 0-3.556-2.884-6.44-6.44-6.44zm0 10.885c-2.64 0-4.78-2.14-4.78-4.78 0-2.64 2.14-4.78 4.78-4.78 2.64 0 4.78 2.14 4.78 4.78 0 2.64-2.14 4.78-4.78 4.78z"/>
+                            <path d="M16.38 8.77h-1.52c-.12-.62-.66-1.16-1.28-1.28v-1.52h2.8v2.8z"/>
+                        </svg>
+                    </button>
+                    <button class="social-btn" aria-label="Sign in with Facebook">
+                        <svg class="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879v-6.988h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12c0-5.523-4.477-10-10-10z"/>
+                        </svg>
+                    </button>
+                </div>
+                <button onclick="showMainPage()" class="back-home-btn">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Home
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="signup-page" class="page-section">
+        <div class="auth-container">
+            <div class="auth-card">
+                <h2 class="auth-title">Inventory<span class="auth-title-accent">Flow</span></h2>
+                <form id="signup-form" class="auth-form space-y-4">
+                    <div class="form-group">
+                        <label for="fullname" class="block text-sm font-medium">Full Name</label>
+                        <input type="text" id="fullname" placeholder="Enter your full name" required class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="email" class="block text-sm font-medium">Email Address</label>
+                        <input type="email" id="email" placeholder="Enter your email" required class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-username" class="block text-sm font-medium">Username</label>
+                        <input type="text" id="new-username" placeholder="Choose a username" required class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password" class="block text-sm font-medium">Password</label>
+                        <input type="password" id="new-password" placeholder="Create a password" required class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-password" class="block text-sm font-medium">Confirm Password</label>
+                        <input type="password" id="confirm-password" placeholder="Confirm your password" required class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="flex items-center text-sm">
+                            <input type="checkbox" id="terms" required class="mr-2">
+                            I agree to the <a href="#" class="auth-link">Terms of Service</a> and <a href="#" class="auth-link">Privacy Policy</a>
+                        </label>
+                    </div>
+                    <button type="submit" class="auth-btn">Create Account</button>
+                    <div class="text-center text-sm">
+                        <a href="javascript:showLoginPage()" class="auth-link">Already have an account? Sign In</a>
+                    </div>
+                </form>
+                <div class="or-divider">OR</div>
+                <div class="flex justify-center gap-4">
+                    <button class="social-btn" aria-label="Sign up with Google">
+                        <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12.545 2.875c-3.556 0-6.44 2.884-6.44 6.44 0 3.556 2.884 6.44 6.44 6.44 3.556 0 6.44-2.884 6.44-6.44 0-3.556-2.884-6.44-6.44-6.44zm0 10.885c-2.64 0-4.78-2.14-4.78-4.78 0-2.64 2.14-4.78 4.78-4.78 2.64 0 4.78 2.14 4.78 4.78 0 2.64-2.14 4.78-4.78 4.78z"/>
+                            <path d="M16.38 8.77h-1.52c-.12-.62-.66-1.16-1.28-1.28v-1.52h2.8v2.8z"/>
+                        </svg>
+                    </button>
+                    <button class="social-btn" aria-label="Sign up with Facebook">
+                        <svg class="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879v-6.988h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12c0-5.523-4.477-10-10-10z"/>
+                        </svg>
+                    </button>
+                </div>
+                <button onclick="showMainPage()" class="back-home-btn">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Home
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script src="enhanced-script.js"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93368340e848bade',t:'MTc0NTE3MTcyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
-

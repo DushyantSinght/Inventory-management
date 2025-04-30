@@ -1,500 +1,638 @@
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recognition = SpeechRecognition ? new SpeechRecognition() : null;
-
-let inventory = JSON.parse(localStorage.getItem('inventory')) || [
-    { id: '001', name: 'Steel Rod', category: 'Raw Materials', quantity: 50, value: 100, alerted: false },
-    { id: '002', name: 'Gear Box', category: 'Components', quantity: 5, value: 500, alerted: false },
-    { id: '003', name: 'Bolts', category: 'Fasteners', quantity: 200, value: 20, alerted: false }
+// Dummy data for demonstration
+const dummyData = [
+    { id: 'INV001', name: 'Laptop', category: 'Electronics', quantity: 15, value: 1200, status: 'In Stock' },
+    { id: 'INV002', name: 'Desk Chair', category: 'Furniture', quantity: 8, value: 175, status: 'In Stock' },
+    { id: 'INV003', name: 'Printer Paper', category: 'Office Supplies', quantity: 10, value: 12.99, status: 'In Stock' },
+    { id: 'INV004', name: 'Coffee Maker', category: 'Kitchen', quantity: 6, value: 89.99, status: 'In Stock' },
+    { id: 'INV005', name: 'Whiteboard', category: 'Office Supplies', quantity: 4, value: 45.50, status: 'Low Stock' },
+    { id: 'INV006', name: 'Fasteners', category: 'Industrial Supplies', quantity: 10, value: 700.58, status: 'In Stock' },
+    { id: 'INV007', name: 'Cement', category: 'Industrial Supplies', quantity: 20, value: 708.78, status: 'In Stock' },
+    { id: 'INV008', name: 'Motherboard', category: 'Electronics', quantity: 0, value: 80.00, status: 'Out of Stock' },
+    { id: 'INV009', name: 'Mouse', category: 'Electronics', quantity: 0, value: 200.00, status: 'Out of Stock' },
+    { id: 'INV010', name: 'Slicer', category: 'Kitchen', quantity: 5, value: 400.80, status: 'Low Stock' },
+    { id: 'INV013', name: 'Printer Cartridges', category: 'Office Supplies', quantity: 5, value: 120.00, status: 'Low Stock' }
 ];
 
-const elements = {
-    productTable: document.getElementById('product-table'),
-    itemForm: document.getElementById('item-creation-form'),
-    searchInput: document.getElementById('search'),
-    totalItemsCount: document.querySelector('#total-items .count'),
-    lowStockCount: document.querySelector('#low-stock .count'),
-    categoriesCount: document.querySelector('#categories .count'),
-    heatmap: document.getElementById('heatmap'),
-    chartCanvas: document.getElementById('inventory-chart'),
-    modeToggle: document.getElementById('mode-toggle'),
-    body: document.body,
-    canvas: document.getElementById('nebula-canvas'),
-    quickAddToggle: document.getElementById('quick-add-toggle'),
-    quickAddForm: document.getElementById('quick-add-form'),
-    voiceBtn: document.getElementById('voice-btn'),
-    headline: document.querySelector('.hero-headline'),
-    topItemName: document.getElementById('top-item-name'),
-    topItemQty: document.getElementById('top-item-qty'),
-    valueChartCanvas: document.getElementById('value-chart'),
-    alertsContainer: document.getElementById('alerts')
-};
+// Initialize inventory from localStorage or use dummy data
+let inventory = JSON.parse(localStorage.getItem('inventoryflow-data')) || dummyData;
 
-const ctx = elements.canvas?.getContext('2d');
-let particles = [];
-let inventoryChart = null;
-let valueChart = null;
+// Initialize users from localStorage or empty array
+let users = JSON.parse(localStorage.getItem('inventoryflow-users')) || [];
 
-function renderInventory(items) {
-    if (!elements.productTable) return;
-    elements.productTable.innerHTML = '';
-    items.forEach(item => {
-        const status = item.quantity === 0 ? 'out' : item.quantity < 10 ? 'low' : 'in-stock';
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${item.id}</td>
-            <td>${item.name}</td>
-            <td>${item.category}</td>
-            <td class="${item.quantity < 10 ? 'low-stock' : ''}">${item.quantity}</td>
-            <td>$${item.value}</td>
-            <td><span class="status-badge status-${status}">${status.replace('-', ' ')}</span></td>
-            <td>
-                <button onclick="editItem('${item.id}')">Edit</button>
-                <button onclick="deleteItem('${item.id}')">Delete</button>
-            </td>
-        `;
-        elements.productTable.appendChild(row);
-    });
-    updateDashboard();
-}
-
-function updateDashboard() {
-    if (!elements.totalItemsCount || !elements.lowStockCount || !elements.categoriesCount) return;
-    const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) {
-            const totalItems = inventory.length;
-            const lowStockItems = inventory.filter(item => item.quantity < 10);
-            const categories = new Set(inventory.map(item => item.category)).size;
-            const topItem = inventory.reduce((max, item) => item.quantity > max.quantity ? item : max, inventory[0] || { name: 'None', quantity: 0 });
-
-            animateCount(elements.totalItemsCount, totalItems);
-            animateCount(elements.lowStockCount, lowStockItems.length);
-            animateCount(elements.categoriesCount, categories);
-            if (elements.topItemName && elements.topItemQty) {
-                elements.topItemName.textContent = topItem.name;
-                elements.topItemQty.textContent = topItem.quantity;
-            }
-            updateHeatmap();
-            updateChart();
-            updateValueChart();
-
-            lowStockItems.forEach(item => {
-                if (!item.alerted) {
-                    showAlert(`Low Stock Alert: ${item.name} (${item.quantity} left)`);
-                    item.alerted = true;
-                }
-            });
-            observer.disconnect();
-        }
-    }, { threshold: 0.1 });
-    observer.observe(document.getElementById('dashboard'));
-}
-
-function animateCount(element, target) {
-    let start = 0;
-    const duration = 1500;
-    const step = target / (duration / 16);
-    element.setAttribute('data-target', target);
-
-    function update() {
-        start += step;
-        element.textContent = start >= target ? target : Math.round(start);
-        if (start < target) requestAnimationFrame(update);
-    }
-    requestAnimationFrame(update);
-}
-
-function updateHeatmap() {
-    if (!elements.heatmap) return;
-    elements.heatmap.innerHTML = '';
-    inventory.forEach(item => {
-        const heatItem = document.createElement('div');
-        heatItem.className = 'heatmap-item';
-        heatItem.textContent = item.quantity;
-        heatItem.style.background = elements.body.classList.contains('dark-mode')
-            ? (item.quantity < 10 ? 'linear-gradient(135deg, #ff00cc, #ffcc00)' :
-               item.quantity < 50 ? 'linear-gradient(135deg, #ffcc00, #00ffcc)' :
-               'linear-gradient(135deg, #00ffcc, #00ff99)')
-            : (item.quantity < 10 ? '#f56565' : item.quantity < 50 ? '#ecc94b' : '#48bb78');
-        elements.heatmap.appendChild(heatItem);
-    });
-}
-
-function updateChart() {
-    if (!elements.chartCanvas || !window.Chart) return;
-    const categories = {};
-    inventory.forEach(item => {
-        categories[item.category] = (categories[item.category] || 0) + item.quantity;
-    });
-
-    const labels = Object.keys(categories);
-    const data = Object.values(categories);
-
-    if (inventoryChart) inventoryChart.destroy();
-
-    inventoryChart = new Chart(elements.chartCanvas, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Total Quantity',
-                data: data,
-                backgroundColor: elements.body.classList.contains('dark-mode')
-                    ? 'rgba(0, 255, 204, 0.7)'
-                    : 'rgba(74, 144, 226, 0.7)',
-                borderColor: elements.body.classList.contains('dark-mode')
-                    ? '#00ffcc'
-                    : '#4a90e2',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            scales: {
-                y: { beginAtZero: true, title: { display: true, text: 'Quantity' } },
-                x: { title: { display: true, text: 'Categories' } }
-            }
-        }
-    });
-}
-
-function updateValueChart() {
-    if (!elements.valueChartCanvas || !window.Chart) return;
-    const labels = inventory.map(item => item.name);
-    const data = inventory.map(item => item.value * item.quantity);
-
-    if (valueChart) valueChart.destroy();
-
-    valueChart = new Chart(elements.valueChartCanvas, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Total Value',
-                data: data,
-                backgroundColor: elements.body.classList.contains('dark-mode')
-                    ? 'rgba(255, 0, 204, 0.7)'
-                    : 'rgba(255, 107, 107, 0.7)',
-                borderColor: elements.body.classList.contains('dark-mode')
-                    ? '#ff00cc'
-                    : '#ff6b6b',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            scales: {
-                y: { beginAtZero: true, title: { display: true, text: 'Value ($)' } },
-                x: { title: { display: true, text: 'Items' } }
-            }
-        }
-    });
-}
-
-function createParticle() {
-    return {
-        x: Math.random() * (elements.canvas?.width || window.innerWidth),
-        y: Math.random() * (elements.canvas?.height || window.innerHeight),
-        size: Math.random() * 5 + 2,
-        speedX: Math.random() * 0.3 - 0.15,
-        speedY: Math.random() * 0.3 - 0.15,
-        opacity: Math.random() * 0.6 + 0.4,
-        hue: Math.random() * 360,
-        life: Math.random() * 100 + 50
-    };
-}
-
-function animateNebula(timestamp) {
-    if (!ctx || !elements.body.classList.contains('dark-mode')) return;
-    const now = performance.now();
-    if (now - (animateNebula.lastFrame || 0) < 33) {
-        requestAnimationFrame(animateNebula);
+// Show alert with type (error/success)
+function showAlert(message, type = 'info') {
+    console.log(`showAlert: ${message}, type: ${type}`);
+    const alertsContainer = document.getElementById('alerts');
+    if (!alertsContainer) {
+        console.error('Alerts container not found');
         return;
     }
-    animateNebula.lastFrame = now;
 
-    ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
-    if (particles.length < 100) particles.push(createParticle());
-    particles = particles.filter(p => p.life > 0);
-    particles.forEach((p, index) => {
-        p.x += p.speedX;
-        p.y += p.speedY;
-        p.life -= 0.5;
-        p.opacity = Math.sin(now * 0.001 + index) * 0.5 + 0.5;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${p.hue}, 90%, 60%, ${p.opacity * (p.life / 100)})`;
-        ctx.fill();
-    });
-    requestAnimationFrame(animateNebula);
-}
-animateNebula.lastFrame = 0;
-
-if (elements.itemForm) {
-    elements.itemForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const id = document.getElementById('item-id')?.value || String(inventory.length + 1).padStart(3, '0');
-        const name = document.getElementById('item-name')?.value.trim();
-        const category = document.getElementById('item-category')?.value.trim();
-        const quantity = parseInt(document.getElementById('item-quantity')?.value || 0);
-        const value = parseFloat(document.getElementById('item-value')?.value || 0);
-
-        if (!name || !category || isNaN(quantity) || quantity < 0 || isNaN(value) || value < 0) {
-            showAlert('Please fill all fields correctly!');
-            return;
-        }
-
-        const existingItemIndex = inventory.findIndex(item => item.id === id);
-        if (existingItemIndex > -1) {
-            inventory[existingItemIndex] = { id, name, category, quantity, value, alerted: false };
-        } else {
-            inventory.push({ id, name, category, quantity, value, alerted: false });
-        }
-
-        localStorage.setItem('inventory', JSON.stringify(inventory));
-        renderInventory(inventory);
-        elements.itemForm.reset();
-        document.getElementById('item-id').value = '';
-    });
-}
-
-function editItem(id) {
-    const item = inventory.find(item => item.id === id);
-    if (item) {
-        document.getElementById('item-id').value = item.id;
-        document.getElementById('item-name').value = item.name;
-        document.getElementById('item-category').value = item.category;
-        document.getElementById('item-quantity').value = item.quantity;
-        document.getElementById('item-value').value = item.value;
-        document.getElementById('item-creation')?.scrollIntoView({ behavior: 'smooth' });
-    }
-}
-
-function deleteItem(id) {
-    inventory = inventory.filter(item => item.id !== id);
-    localStorage.setItem('inventory', JSON.stringify(inventory));
-    renderInventory(inventory);
-}
-
-if (elements.searchInput) {
-    let timeout;
-    elements.searchInput.addEventListener('input', (e) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-            const searchTerm = e.target.value.toLowerCase();
-            const filteredItems = inventory.filter(item =>
-                item.name.toLowerCase().includes(searchTerm) ||
-                item.id.includes(searchTerm) ||
-                item.category.toLowerCase().includes(searchTerm)
-            );
-            renderInventory(filteredItems);
-        }, 300);
-    });
-}
-
-function exportInventory() {
-    if (!inventory.length) return showAlert('No data to export!');
-    try {
-        const csv = 'ID,Name,Category,Quantity,Value\n' +
-            inventory.map(item => `${item.id},${item.name},${item.category},${item.quantity},${item.value}`).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'inventory_flow.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showAlert('Inventory exported successfully!');
-    } catch (error) {
-        console.error('Export failed:', error);
-        showAlert('Failed to export inventory.');
-    }
-}
-
-function resizeCanvas() {
-    if (elements.canvas) {
-        elements.canvas.width = window.innerWidth;
-        elements.canvas.height = document.getElementById('dashboard')?.offsetHeight || 1000;
-    }
-}
-
-if (elements.modeToggle) {
-    elements.modeToggle.addEventListener('click', () => {
-        if (elements.body.classList.contains('light-mode')) {
-            elements.body.classList.replace('light-mode', 'dark-mode');
-            elements.modeToggle.textContent = 'Light Mode';
-            if (ctx) animateNebula();
-        } else {
-            elements.body.classList.replace('dark-mode', 'light-mode');
-            elements.modeToggle.textContent = 'Dark Mode';
-            particles = [];
-        }
-        updateHeatmap();
-        updateChart();
-        updateValueChart();
-    });
-}
-
-if (elements.quickAddToggle && elements.quickAddForm) {
-    elements.quickAddToggle.addEventListener('click', () => {
-        elements.quickAddForm.style.display = elements.quickAddForm.style.display === 'block' ? 'none' : 'block';
-    });
-
-    elements.quickAddForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const name = document.getElementById('quick-name')?.value.trim();
-        const category = document.getElementById('quick-category')?.value.trim();
-        const quantity = parseInt(document.getElementById('quick-quantity')?.value || 0);
-        const value = parseFloat(document.getElementById('quick-value')?.value || 0);
-
-        if (!name || !category || isNaN(quantity) || quantity < 0 || isNaN(value) || value < 0) {
-            showAlert('Please fill all fields correctly!');
-            return;
-        }
-
-        const id = String(inventory.length + 1).padStart(3, '0');
-        inventory.push({ id, name, category, quantity, value, alerted: false });
-        localStorage.setItem('inventory', JSON.stringify(inventory));
-        renderInventory(inventory);
-        elements.quickAddForm.reset();
-        elements.quickAddForm.style.display = 'none';
-    });
-}
-
-if (elements.voiceBtn) {
-    if (recognition) {
-        recognition.onresult = (event) => {
-            let transcript = event.results[0][0].transcript.trim();
-            transcript = transcript.replace(/\.$/, '');
-            transcript = transcript
-                .split(' ')
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                .join(' ');
-
-            if (transcript.toLowerCase().includes('add')) {
-                const parts = transcript.toLowerCase().split('add')[1].trim().split(' ');
-                const name = parts.slice(0, -2).join(' ');
-                const quantity = parseInt(parts[parts.length - 2]);
-                const category = parts[parts.length - 1];
-                const value = parseFloat(prompt('Enter item value ($):') || 0);
-                if (name && !isNaN(quantity) && category && !isNaN(value)) {
-                    const id = String(inventory.length + 1).padStart(3, '0');
-                    inventory.push({ 
-                        id, 
-                        name: name.charAt(0).toUpperCase() + name.slice(1), 
-                        category: category.charAt(0).toUpperCase() + category.slice(1), 
-                        quantity, 
-                        value, 
-                        alerted: false 
-                    });
-                    localStorage.setItem('inventory', JSON.stringify(inventory));
-                    renderInventory(inventory);
-                    showAlert(`Added: ${name} (${quantity}) to ${category}`);
-                }
-            } else {
-                elements.searchInput.value = transcript;
-                const filteredItems = inventory.filter(item =>
-                    item.name.toLowerCase().includes(transcript.toLowerCase()) ||
-                    item.id.includes(transcript) ||
-                    item.category.toLowerCase().includes(transcript.toLowerCase())
-                );
-                renderInventory(filteredItems);
-            }
-        };
-
-        elements.voiceBtn.addEventListener('click', () => recognition.start());
-    } else {
-        elements.voiceBtn.disabled = true;
-        elements.voiceBtn.title = 'Voice recognition not supported in this browser';
-    }
-}
-
-function showAlert(message) {
-    if (!elements.alertsContainer) return;
     const alert = document.createElement('div');
-    alert.className = 'alert';
-    alert.innerHTML = `${message} <button class="dismiss-btn">✖</button>`;
-    elements.alertsContainer.appendChild(alert);
-    const timeout = setTimeout(() => alert.remove(), 5000);
-    alert.querySelector('.dismiss-btn').addEventListener('click', () => {
-        clearTimeout(timeout);
-        alert.remove();
+    alert.className = `alert alert-${type}`;
+    alert.textContent = message;
+    alert.style.zIndex = '2002';
+    alertsContainer.appendChild(alert);
+
+    setTimeout(() => {
+        alert.classList.add('fade-out');
+        setTimeout(() => alert.remove(), 500);
+    }, 5000);
+}
+
+// Add slideOut animation
+const slideOutStyle = document.createElement('style');
+slideOutStyle.innerHTML = `
+    @keyframes slideOut {
+        0% { transform: translateX(0); opacity: 1; }
+        100% { transform: translateX(100%); opacity: 0; }
+    }
+    .alert.fade-out {
+        animation: slideOut 0.5s ease-out forwards;
+    }
+`;
+document.head.appendChild(slideOutStyle);
+
+// Page navigation functions
+function showMainPage() {
+    document.querySelectorAll('.page-section').forEach(page => page.classList.remove('active'));
+    document.getElementById('main-page').classList.add('active');
+    console.log('Navigated to main page');
+}
+
+function showLoginPage() {
+    document.querySelectorAll('.page-section').forEach(page => page.classList.remove('active'));
+    document.getElementById('login-page').classList.add('active');
+    createParticles('login-particles');
+}
+
+function showSignupPage() {
+    document.querySelectorAll('.page-section').forEach(page => page.classList.remove('active'));
+    document.getElementById('signup-page').classList.add('active');
+    createParticles('signup-particles');
+}
+
+// Save inventory to localStorage
+function saveInventory() {
+    localStorage.setItem('inventoryflow-data', JSON.stringify(inventory));
+}
+
+// Save users to localStorage
+function saveUsers() {
+    localStorage.setItem('inventoryflow-users', JSON.stringify(users));
+}
+
+// Password strength validation
+function validatePasswordStrength(password) {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecialChars = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (password.length < minLength) {
+        return { isValid: false, message: 'Password must be at least 8 characters long.' };
+    }
+    if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChars) {
+        return { isValid: false, message: 'Password must include uppercase, lowercase, numbers, and special characters.' };
+    }
+    return { isValid: true, message: 'Password is strong.' };
+}
+
+// Update product table
+function updateProductTable() {
+    console.log('Updating table with inventory:', inventory);
+    const productTable = document.getElementById('product-table');
+    if (!productTable) {
+        console.error('Product table not found');
+        showAlert('Product table not found', 'error');
+        return;
+    }
+
+    let tableHTML = '';
+    inventory.forEach(item => {
+        tableHTML += `
+            <tr>
+                <td>${item.id}</td>
+                <td>${item.name}</td>
+                <td>${item.category}</td>
+                <td>${item.quantity}</td>
+                <td>${formatIndianCurrency(item.value)}</td>
+                <td class="${item.status === 'Low Stock' ? 'text-red-500' : item.status === 'Out of Stock' ? 'text-gray-500' : 'text-green-500'}">${item.status}</td>
+                <td>
+                    <button class="bg-blue-500 text-white px-2 py-1 rounded mr-1 edit-btn" data-id="${item.id}">Edit</button>
+                    <button class="bg-red-500 text-white px-2 py-1 rounded delete-btn" data-id="${item.id}">Delete</button>
+                </td>
+            </tr>
+        `;
+    });
+    productTable.innerHTML = tableHTML || '<tr><td colspan="7">No items available</td></tr>';
+
+    document.querySelectorAll('.edit-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const itemId = e.target.dataset.id;
+            const item = inventory.find(i => i.id === itemId);
+            if (item) {
+                document.getElementById('item-id').value = item.id;
+                document.getElementById('item-name').value = item.name;
+                document.getElementById('item-category').value = item.category;
+                document.getElementById('item-quantity').value = item.quantity;
+                document.getElementById('item-value').value = item.value;
+                document.getElementById('item-creation').scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    });
+
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const itemId = e.target.dataset.id;
+            if (confirm(`Are you sure you want to delete item ${itemId}?`)) {
+                inventory = inventory.filter(i => i.id !== itemId);
+                saveInventory();
+                updateProductTable();
+                updateStatsAndCharts();
+                showAlert('Item deleted successfully!', 'success');
+            }
+        });
+    });
+
+    // Update dashboard stats
+    document.querySelector('#total-items .count').textContent = inventory.length;
+    document.querySelector('#low-stock .count').textContent = inventory.filter(item => item.status === 'Low Stock').length;
+    document.querySelector('#out-of-stock .count').textContent = inventory.filter(item => item.status === 'Out of Stock').length;
+    const categories = [...new Set(inventory.map(item => item.category))];
+    document.querySelector('#categories .count').textContent = categories.length;
+    const topItem = inventory.reduce((max, item) => item.quantity > max.quantity ? item : max, inventory[0] || { name: 'None', quantity: 0 });
+    document.getElementById('top-item-name').textContent = topItem.name;
+    document.getElementById('top-item-qty').textContent = topItem.quantity;
+
+    // Low stock alerts
+    inventory.forEach(item => {
+        if (item.status === 'Low Stock') {
+            showAlert(`Low stock alert: ${item.name} (Quantity: ${item.quantity})`, 'error');
+        }
     });
 }
 
+// Update charts (minimal version for PDF compatibility)
+function updateStatsAndCharts() {
+    // Placeholder for chart updates (handled in enhanced-script.js if needed)
+    console.log('Charts updated (placeholder)');
+}
+
+// Format number in Indian currency style
+function formatIndianCurrency(value) {
+    const formatter = new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    return formatter.format(value);
+}
+
+// Export inventory as Excel
+function exportInventory() {
+    try {
+        const worksheet = XLSX.utils.json_to_sheet(inventory.map(item => ({
+            ID: item.id,
+            Name: item.name,
+            Category: item.category,
+            Quantity: item.quantity,
+            Value: formatIndianCurrency(item.value),
+            Status: item.status
+        })));
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Inventory');
+        XLSX.writeFile(workbook, `inventory_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+        showAlert('Inventory exported successfully as Excel!', 'success');
+    } catch (error) {
+        showAlert(`Export failed: ${error.message}`, 'error');
+    }
+}
+
+// Import CSV
 function importCSV(event) {
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {
+        showAlert('No file selected.', 'error');
+        return;
+    }
+
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = function(e) {
         try {
-            const text = e.target.result;
-            const rows = text.split('\n').slice(1).filter(row => row.trim());
-            let added = 0;
-            rows.forEach(row => {
-                const [id, name, category, quantity, value] = row.split(',');
-                if (id && name && category && !isNaN(quantity) && !isNaN(value)) {
-                    inventory.push({
-                        id: id.trim(),
-                        name: name.trim(),
-                        category: category.trim(),
-                        quantity: parseInt(quantity),
-                        value: parseFloat(value),
-                        alerted: false
-                    });
-                    added++;
-                }
-            });
-            localStorage.setItem('inventory', JSON.stringify(inventory));
-            renderInventory(inventory);
-            showAlert(`CSV imported successfully! ${added} items added.`);
+            const contents = e.target.result;
+            const lines = contents.split('\n').map(line => line.split(','));
+            const headers = lines[0];
+            const newItems = lines.slice(1).map(line => ({
+                id: line[0],
+                name: line[1],
+                category: line[2],
+                quantity: parseInt(line[3]),
+                value: parseFloat(line[4]),
+                status: parseInt(line[3]) <= 5 ? 'Low Stock' : parseInt(line[3]) === 0 ? 'Out of Stock' : 'In Stock'
+            }));
+
+            inventory = [...inventory, ...newItems.filter(item => item.id && item.name && item.category && !isNaN(item.quantity) && !isNaN(item.value))];
+            saveInventory();
+            updateProductTable();
+            updateStatsAndCharts();
+            showAlert('CSV imported successfully!', 'success');
         } catch (error) {
-            console.error('CSV import error:', error);
-            showAlert('Error importing CSV. Check file format (ID,Name,Category,Quantity,Value).');
+            showAlert(`Error importing CSV: ${error.message}`, 'error');
         }
     };
     reader.readAsText(file);
 }
 
-function generatePDFReport() {
-    if (!window.jspdf || !window.jspdf.jsPDF) return showAlert('jsPDF not loaded!');
-    const { jsPDF } = window.jspdf;
-    if (!jsPDF.prototype.autoTable) return showAlert('autoTable plugin not loaded!');
-    const doc = new jsPDF();
+// PDF Generation Script
+const loadPDFLibrary = async () => {
     try {
-        doc.setFontSize(40);
-        doc.text('InventoryFlow Report', 20, 50);
-        doc.setFontSize(16);
-        doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 80);
-        doc.text(`Total Items: ${inventory.length}`, 20, 100);
-        doc.text(`Low Stock: ${inventory.filter(i => i.quantity < 10).length}`, 20, 110);
+        await loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+        await loadScript('https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.25/dist/jspdf.plugin.autotable.min.js');
+        if (!window.jspdf) throw new Error('Primary CDN loaded but window.jspdf not defined');
+        return true;
+    } catch (error) {
+        console.error('PDF library loading failed:', error);
+        throw error;
+    }
+};
 
-        doc.addPage();
-        doc.setFontSize(22);
-        doc.text('Detailed Inventory', 20, 20);
-        doc.autoTable({
-            startY: 30,
-            head: [['ID', 'Name', 'Category', 'Quantity', 'Value']],
-            body: inventory.map(item => [item.id, item.name, item.category, item.quantity, `$${item.value}`]),
-            theme: 'striped',
-            headStyles: { fillColor: [74, 144, 226] },
-            styles: { fontSize: 10, cellPadding: 5 }
+const loadScript = (src) => {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+};
+
+// Particle effect creator
+function createParticles(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    const particleCount = 100;
+    const isDarkMode = document.body.classList.contains('dark-mode');
+
+    for (let i = 0; i < particleCount; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            radius: Math.random() * 3 + 1,
+            color: isDarkMode ?
+                `rgba(${Math.floor(Math.random() * 100)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.random() * 0.5 + 0.1})` :
+                `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.random() * 0.3 + 0.1})`,
+            speedX: Math.random() * 0.5 - 0.25,
+            speedY: Math.random() * 0.5 - 0.25
+        });
+    }
+
+    function drawParticles() {
+        if (!canvas.parentNode) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        particles.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.fill();
+
+            p.x += p.speedX;
+            p.y += p.speedY;
+
+            if (p.x < 0 || p.x > canvas.width) p.speedX *= -1;
+            if (p.y < 0 || p.y > canvas.height) p.speedY *= -1;
         });
 
-        doc.save('inventory_report.pdf');
-        showAlert('PDF Report generated successfully!');
-    } catch (error) {
-        console.error('PDF generation error:', error);
-        showAlert('Failed to generate PDF report.');
+        requestAnimationFrame(drawParticles);
     }
+
+    drawParticles();
+
+    window.addEventListener('resize', () => {
+        if (canvas.parentNode) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+    });
 }
 
-window.addEventListener('load', () => {
-    const loadingSpinner = document.getElementById('loading-spinner');
-    if (loadingSpinner) loadingSpinner.style.display = 'none';
-    resizeCanvas();
-    renderInventory(inventory);
-    if (elements.body.classList.contains('dark-mode') && ctx) animateNebula();
+// Main event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Theme toggle
+    const modeToggle = document.getElementById('mode-toggle');
+    modeToggle.addEventListener('click', () => {
+        if (document.body.classList.contains('light-mode')) {
+            document.body.classList.replace('light-mode', 'dark-mode');
+            modeToggle.textContent = 'Light Mode';
+            localStorage.setItem('inventoryflow-theme', 'dark');
+        } else {
+            document.body.classList.replace('dark-mode', 'light-mode');
+            modeToggle.textContent = 'Dark Mode';
+            localStorage.setItem('inventoryflow-theme', 'light');
+        }
+    });
+
+    const savedTheme = localStorage.getItem('inventoryflow-theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.replace('light-mode', 'dark-mode');
+        modeToggle.textContent = 'Light Mode';
+    }
+
+    // Quick add form toggle
+    const quickAddToggle = document.getElementById('quick-add-toggle');
+    const quickAddForm = document.getElementById('quick-add-form');
+    quickAddToggle.addEventListener('click', () => {
+        quickAddForm.style.display = quickAddForm.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // Login form submission
+    const loginForm = document.getElementById('login-form');
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value.trim();
+
+        if (!username || !password) {
+            showAlert('Please enter both username and password!', 'error');
+            return;
+        }
+
+        const user = users.find(u => u.username === username && u.password === password);
+        if (user) {
+            localStorage.setItem('inventoryflow-user', username);
+            showAlert('Login successful!', 'success');
+            loginForm.reset();
+            updateLoginButton();
+            setTimeout(() => showMainPage(), 300); // Delay for alert visibility
+        } else {
+            showAlert('Invalid username or password.', 'error');
+        }
+    });
+
+    // Signup form submission
+    const signupForm = document.getElementById('signup-form');
+    signupForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const fullname = document.getElementById('fullname').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const username = document.getElementById('new-username').value.trim();
+        const password = document.getElementById('new-password').value.trim();
+        const confirmPassword = document.getElementById('confirm-password').value.trim();
+        const termsCheck = document.getElementById('terms').checked;
+
+        if (!fullname || !email || !username || !password || !confirmPassword) {
+            showAlert('Please fill in all fields.', 'error');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            showAlert('Passwords do not match.', 'error');
+            return;
+        }
+
+        if (!termsCheck) {
+            showAlert('You must agree to the Terms of Service and Privacy Policy.', 'error');
+            return;
+        }
+
+        if (users.some(u => u.username === username)) {
+            showAlert('Username already exists. Please choose a different username.', 'error');
+            return;
+        }
+        if (users.some(u => u.email === email)) {
+            showAlert('Email already registered. Please use a different email.', 'error');
+            return;
+        }
+
+        const passwordValidation = validatePasswordStrength(password);
+        if (!passwordValidation.isValid) {
+            showAlert(passwordValidation.message, 'error');
+            return;
+        }
+
+        const newUser = { fullname, email, username, password };
+        users.push(newUser);
+        saveUsers();
+        showAlert('Signup successful! You can now log in.', 'success');
+        signupForm.reset();
+        setTimeout(() => showLoginPage(), 300); // Delay for alert visibility
+    });
+
+    // Forgot password
+    const forgotPassword = document.getElementById('forgot-password');
+    forgotPassword.addEventListener('click', (e) => {
+        e.preventDefault();
+        const email = prompt('Enter your email to reset password:');
+        if (email && users.some(u => u.email === email)) {
+            showAlert(`Password reset instructions sent to ${email}.`, 'success');
+        } else if (email) {
+            showAlert('Email not found.', 'error');
+        }
+    });
+
+    // Update login/logout button
+    function updateLoginButton() {
+        const loginBtn = document.getElementById('login-btn');
+        const username = localStorage.getItem('inventoryflow-user');
+
+        if (username && loginBtn) {
+            loginBtn.textContent = 'Logout';
+            loginBtn.classList.add('logout-btn');
+            loginBtn.href = 'javascript:void(0)';
+            loginBtn.onclick = function() {
+                localStorage.removeItem('inventoryflow-user');
+                showAlert('You have been logged out successfully!', 'success');
+                loginBtn.textContent = 'Login';
+                loginBtn.classList.remove('logout-btn');
+                loginBtn.href = 'javascript:showLoginPage()';
+                loginBtn.onclick = null;
+            };
+        }
+    }
+
+    updateLoginButton();
+
+    // PDF generation (unchanged)
+    document.getElementById('pdf-button').addEventListener('click', async function() {
+        try {
+            const spinner = document.getElementById('loading-spinner');
+            spinner.style.display = 'flex';
+
+            await loadPDFLibrary();
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+            const margin = 10;
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const contentWidth = pageWidth - 2 * margin;
+            const lineHeight = 7;
+
+            function addHeader(pageNumber, totalPages) {
+                doc.setFillColor(0, 120, 215);
+                doc.rect(0, 0, pageWidth, 15, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text('InventoryFlow', margin, 10);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(10);
+                doc.text('Inventory Report', pageWidth - margin - 50, 10);
+            }
+
+            function addFooter(pageNumber, totalPages) {
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth / 2, pageHeight - margin, { align: 'center' });
+                doc.text('© 2025 InventoryFlow. All rights reserved.', margin, pageHeight - margin);
+            }
+
+            doc.setFillColor(0, 120, 215);
+            doc.rect(0, 0, pageWidth, pageHeight, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(36);
+            doc.text('InventoryFlow', pageWidth / 2, 80, { align: 'center' });
+            doc.setFontSize(24);
+            doc.text('Inventory Report', pageWidth / 2, 100, { align: 'center' });
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Generated on: ${new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}`, pageWidth / 2, 120, { align: 'center' });
+            doc.setFontSize(10);
+            doc.text('© 2025 InventoryFlow. All rights reserved.', pageWidth / 2, pageHeight - margin, { align: 'center' });
+            doc.addPage();
+
+            let y = margin + 15;
+            doc.setTextColor(0, 0, 0);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.text('Table of Contents', margin, y);
+            y += lineHeight;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            const tocItems = [
+                { text: '1. Executive Summary', page: 2 },
+                { text: '2. Inventory Statistics', page: 2 },
+                { text: '3. Inventory Items', page: 3 }
+            ];
+            tocItems.forEach(item => {
+                y += lineHeight;
+                doc.text(item.text, margin + 5, y);
+                doc.text(`${item.page}`, pageWidth - margin - 10, y, { align: 'right' });
+            });
+            doc.addPage();
+
+            y = margin + 15;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.text('1. Executive Summary', margin, y);
+            y += lineHeight;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            doc.text('This report provides a comprehensive overview of the current inventory managed by InventoryFlow.', margin, y, { maxWidth: contentWidth });
+            y += lineHeight * 2;
+            doc.text(`Total Items: ${inventory.length}`, margin, y);
+            y += lineHeight;
+            doc.text(`Low Stock Items: ${inventory.filter(item => item.quantity > 0 && item.quantity <= 5).length}`, margin, y);
+            y += lineHeight;
+            doc.text(`Out of Stock Items: ${inventory.filter(item => item.quantity === 0).length}`, margin, y);
+            y += lineHeight;
+            doc.text(`Categories: ${[...new Set(inventory.map(item => item.category))].length}`, margin, y);
+            y += lineHeight * 2;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.text('2. Inventory Statistics', margin, y);
+            y += lineHeight;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12);
+            const totalItems = inventory.length;
+            const lowStockCount = inventory.filter(item => item.quantity > 0 && item.quantity <= 5).length;
+            const outOfStockCount = inventory.filter(item => item.quantity === 0).length;
+            const categoriesCount = [...new Set(inventory.map(item => item.category))].length;
+            const topItem = inventory.reduce((max, item) => item.quantity > max.quantity ? item : max, inventory[0] || { name: 'None', quantity: 0 });
+            doc.setFillColor(240, 245, 255);
+            doc.rect(margin, y, contentWidth, 40, 'F');
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Total Items: ${totalItems}`, margin + 5, y + 10);
+            doc.setTextColor(255, 99, 132);
+            doc.text(`Low Stock: ${lowStockCount}`, margin + 5, y + 17);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Out of Stock: ${outOfStockCount}`, margin + 5, y + 24);
+            doc.text(`Categories: ${categoriesCount}`, margin + 5, y + 31);
+            doc.text(`Top Item: ${topItem.name} (Qty: ${topItem.quantity})`, margin + 5, y + 38);
+            y += 50;
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.text('3. Inventory Items', margin, y);
+            y += lineHeight;
+            const headers = ['ID', 'Name', 'Category', 'Quantity', 'Value', 'Status'];
+            const rows = inventory.map(item => [
+                item.id,
+                item.name,
+                item.category,
+                item.quantity.toString(),
+                formatIndianCurrency(item.value),
+                item.status
+            ]);
+            if (rows.length) {
+                doc.autoTable({
+                    head: [headers],
+                    body: rows,
+                    startY: y,
+                    headStyles: { fillColor: [0, 120, 215], textColor: [255, 255, 255], fontSize: 10 },
+                    bodyStyles: { fontSize: 9, cellPadding: 2 },
+                    alternateRowStyles: { fillColor: [245, 245, 245] },
+                    tableLineColor: [0, 120, 215],
+                    tableLineWidth: 0.1,
+                    margin: { left: margin, right: margin },
+                    columnStyles: {
+                        0: { cellWidth: 25 },
+                        1: { cellWidth: 40 },
+                        2: { cellWidth: 40 },
+                        3: { cellWidth: 20 },
+                        4: { cellWidth: 30 },
+                        5: { cellWidth: 25 }
+                    }
+                });
+            } else {
+                doc.setFontSize(12);
+                doc.text('No inventory items found.', margin, y);
+            }
+
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 2; i <= pageCount; i++) {
+                doc.setPage(i);
+                addHeader(i, pageCount);
+                addFooter(i, pageCount);
+            }
+
+            showAlert('PDF report generated successfully!', 'success');
+            doc.save(`inventoryflow_report_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error('PDF generation failed:', error);
+            showAlert(`PDF generation failed: ${error.message}.`, 'error');
+        } finally {
+            document.getElementById('loading-spinner').style.display = 'none';
+        }
+    });
+
+    // Initial table update
+    updateProductTable();
 });
 
-window.addEventListener('resize', resizeCanvas);
-
+// Page Navigation
+window.showMainPage = showMainPage;
+window.showLoginPage = showLoginPage;
+window.showSignupPage = showSignupPage;
